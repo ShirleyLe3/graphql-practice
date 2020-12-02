@@ -5,10 +5,9 @@ const { graphqlHTTP } = require('express-graphql');
 const { buildSchema } = require('graphql');
 const mongoose = require('mongoose');
 
-const app = express();
+const Event = require('./models/event');
 
-//TEMP DB DATA
-const events = [];
+const app = express();
 
 app.use(helmet());
 app.use(bodyParser.json());
@@ -45,17 +44,34 @@ app.use('/graphql', graphqlHTTP({
   `),
   rootValue: {
     events: () => {
-      return events;
+      return Event
+        .find()
+        .then(events => {
+          return events.map(event => {
+            return { ...event._doc };
+          });
+        })
+        .catch(err => {
+          throw err;
+        });
     },
     createEvent: (args) => {
-      const event = {
-        _id: Math.random().toString(),
+      const event = new Event({
         title: args.eventInput.title,
         description: args.eventInput.title,
         price: +args.eventInput.price,
-        date: new Date().toISOString()
-      };
-      events.push(event);
+        date: new Date(args.eventInput.date)
+      });
+      return event
+        .save()
+        .then(result => {
+          console.log(result);
+          return { ...result._doc };
+        })
+        .catch(err => {
+          console.log(err);
+          throw err;
+        });
       return event;
     }
   },
@@ -63,7 +79,7 @@ app.use('/graphql', graphqlHTTP({
 }));
 
 mongoose
-  .connect('mongodb://localhost:27017/?readPreference=primary&appname=MongoDB%20Compass&ssl=false')
+  .connect('mongodb://localhost:27017/graphql?readPreference=primary&appname=MongoDB%20Compass&ssl=false')
   .then(() => {
     console.log('\nListening...');
     app.listen(8000);
