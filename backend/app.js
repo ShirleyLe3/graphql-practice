@@ -3,6 +3,7 @@ const helmet = require('helmet');
 const bodyParser = require('body-parser');
 const { graphqlHTTP } = require('express-graphql');
 const { buildSchema } = require('graphql');
+const mongoose = require('mongoose');
 
 const app = express();
 
@@ -61,4 +62,13 @@ app.use('/graphql', graphqlHTTP({
   graphiql: true
 }));
 
-app.listen(8000);
+mongoose
+  .connect('mongodb://localhost:27017/?readPreference=primary&appname=MongoDB%20Compass&ssl=false')
+  .then(() => {
+    console.log('\nListening...');
+    app.listen(8000);
+  })
+  .catch(err => {
+    console.log(err);
+  });
+
